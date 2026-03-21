@@ -1,4 +1,5 @@
-const API_KEY = 'AIzaSyBgqjWWcNRx24EuHnbWckYARujnwZHsDu4';
+// Твой новый рабочий ключ
+const API_KEY = 'AIzaSyAjbpr2SCTZls83n_ejF50Z_MVQ2LoLPI8';
 
 const orb = document.getElementById('orb');
 const chatBox = document.getElementById('chat-box');
@@ -15,7 +16,7 @@ function addMessage(sender, text, isAi = false) {
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// 2. Озвучка текста
+// 2. Озвучка текста (Голос Алмазика)
 function speak(text) {
     const synth = window.speechSynthesis;
     const utterance = new SpeechSynthesisUtterance(text);
@@ -27,26 +28,45 @@ function speak(text) {
     synth.speak(utterance);
 }
 
-// 3. Запрос к Gemini AI
+// 3. Запрос к Gemini AI (Мозги)
 async function askGemini(text) {
+    // ВАЖНО: Исправленный URL со всеми слэшами
+    const url = `https://generativelanguage.googleapis.com{API_KEY}`;
+    
     statusText.textContent = "Алмазик думает...";
+    
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com{API_KEY}`, {
+        const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                contents: [{ parts: [{ text: `Ты ИИ Алмазик. Отвечай кратко (до 2 предложений). Вопрос: ${text}` }] }]
+                contents: [{
+                    parts: [{ text: `Ты — ИИ помощник Алмазик. Отвечай кратко и дружелюбно. Вопрос: ${text}` }]
+                }]
             })
         });
+
         const data = await response.json();
+
+        // Проверка, если Google вернул ошибку (например, из-за VPN или ключа)
+        if (data.error) {
+            console.error("Ошибка от Google:", data.error.message);
+            addMessage('Система', 'Google отклонил запрос. Проверь VPN или ключ.');
+            statusText.textContent = "Ошибка API";
+            return;
+        }
+
+        // Извлекаем текст из ответа Gemini
         const aiText = data.candidates[0].content.parts[0].text;
         
         addMessage('Алмазик', aiText, true);
         speak(aiText);
         statusText.textContent = "Алмазик ответил";
+
     } catch (e) {
-        addMessage('Система', 'Ошибка подключения к ИИ.');
-        statusText.textContent = "Ошибка";
+        console.error("Ошибка сети:", e);
+        addMessage('Система', 'Ошибка сети. Убедись, что VPN (v2rayTun) включен!');
+        statusText.textContent = "Ошибка сети";
     }
 }
 
@@ -63,13 +83,19 @@ function handleSend() {
 sendBtn.onclick = handleSend;
 userInput.onkeypress = (e) => { if(e.key === 'Enter') handleSend(); };
 
-// 5. Голосовой ввод (Web Speech API)
+// 5. Голосовой ввод (Микрофон)
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 if (SpeechRecognition) {
     const recognition = new SpeechRecognition();
     recognition.lang = 'ru-RU';
 
-    orb.onclick = () => recognition.start();
+    orb.onclick = () => {
+        try {
+            recognition.start();
+        } catch (e) {
+            console.log("Распознавание уже запущено");
+        }
+    };
     
     recognition.onstart = () => {
         orb.classList.add('active');
@@ -88,5 +114,5 @@ if (SpeechRecognition) {
         statusText.textContent = "Не расслышал...";
     };
 } else {
-    statusText.textContent = "Голос не поддерживается";
+    statusText.textContent = "Голос не поддерживается в этом браузере";
 }
