@@ -2,80 +2,117 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Алмазик AI</title>
-    
-    <!-- Стили встроенные, чтобы не зависеть от style.css -->
     <style>
-        body { background: #0f172a; color: white; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }
-        .diamond { width: 120px; height: 120px; background: #00f2ff; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); margin: 0 auto 20px; font-size: 50px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px #00f2ff; }
-        button { padding: 10px 25px; border: 2px solid #00f2ff; background: none; color: #00f2ff; border-radius: 20px; cursor: pointer; font-weight: bold; }
-        button:disabled { border-color: #444; color: #444; cursor: wait; }
-    </style>
+        /* ТОТ САМЫЙ ЧИСТЫЙ ГОЛУБОЙ СТИЛЬ */
+        body { background: #050a10; color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; transition: 0.5s; }
+        .icon-container { width: 170px; height: 170px; cursor: pointer; transition: 0.4s ease; }
+        .icon-svg { width: 100%; height: 100%; filter: drop-shadow(0 0 25px #00d2ff); }
+        .active .icon-svg { animation: pulse-blue 1.2s infinite ease-in-out; }
+        @keyframes pulse-blue { 0%, 100% { filter: drop-shadow(0 0 20px #00d2ff); transform: scale(1); } 50% { filter: drop-shadow(0 0 60px #e0f7fa); transform: scale(1.08); } }
+        
+        #status { margin-top: 35px; font-size: 1.7rem; font-weight: 300; color: #bdefff; text-shadow: 0 0 10px rgba(0, 210, 255, 0.5); }
+        #out { color: #5a7b8c; margin-top: 15px; font-size: 0.95rem; text-align: center; min-height: 40px; max-width: 80%; }
+        .btn-start { margin-top: 45px; padding: 15px 50px; background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%); border: none; color: #050a10; font-weight: bold; border-radius: 15px; cursor: pointer; box-shadow: 0 5px 25px rgba(0, 210, 255, 0.4); }
 
-    <!-- Используем альтернативный источник для PyScript -->
-    <link rel="stylesheet" href="https://pyscript.net" />
-    <script defer src="https://pyscript.net"></script>
+        /* СКРЫТЫЕ ЭФФЕКТЫ ДЛЯ КОРОЛЁРА */
+        .glitch { animation: shake 0.1s infinite; filter: hue-rotate(90deg) invert(1); }
+        @keyframes shake { 0% {transform: translate(2px, 2px);} 50% {transform: translate(-2px, -2px);} 100% {transform: translate(2px, -2px);} }
+        .barrel-roll { animation: roll 1s ease-in-out; }
+        @keyframes roll { from {transform: rotate(0deg);} to {transform: rotate(360deg);} }
+        .gold-glow { filter: drop-shadow(0 0 35px #ffd700) !important; }
+    </style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="diamond">💎</div>
-        <h1 id="status">Алмазик загружается...</h1>
-        <p id="user-text">Подождите немного</p>
-        <button id="start-btn" disabled>ГОВОРИТЬ</button>
+    <div class="icon-container" id="diamond-btn" onclick="start()">
+        <svg class="icon-svg" id="main-svg" viewBox="0 0 500 500">
+            <defs>
+                <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" id="s1" style="stop-color:#00d2ff;stop-opacity:1" />
+                    <stop offset="100%" id="s2" style="stop-color:#3a7bd5;stop-opacity:1" />
+                </linearGradient>
+            </defs>
+            <circle cx="250" cy="250" r="240" fill="url(#blueGrad)" />
+            <path d="M250 120 C300 120 380 200 380 300 C380 380 320 400 250 400 C180 400 120 380 120 300 C120 200 200 120 250 120 Z" fill="white" />
+        </svg>
     </div>
 
-    <!-- Тот самый voice.js (можно оставить файлом или встроить) -->
+    <h1 id="status">Алмазик готов</h1>
+    <p id="out">СЛУШАЮ ТВОИ ПРИКАЗЫ, КОРОЛЁР...</p>
+    <button class="btn-start" onclick="start()">СПРОСИТЬ</button>
+
+    <audio id="snd-open" src="https://assets.mixkit.co"></audio>
+    <audio id="snd-close" src="https://assets.mixkit.co"></audio>
+
     <script>
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.lang = 'ru-RU';
-        function js_listen() { recognition.start(); }
-        recognition.onresult = (e) => {
-            const text = e.results[0][0].transcript;
-            window.dispatchEvent(new CustomEvent("processSpeech", { detail: text }));
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const rec = new SpeechRecognition();
+        rec.lang = 'ru-RU';
+
+        const sndOpen = document.getElementById('snd-open');
+        const sndClose = document.getElementById('snd-close');
+        const btnContainer = document.getElementById('diamond-btn');
+        const statusTxt = document.getElementById('status');
+
+        function start() {
+            try { sndOpen.play(); rec.start(); statusTxt.innerText = "СЛУШАЮ..."; btnContainer.classList.add('active'); } catch(e) {}
+        }
+
+        rec.onresult = (event) => {
+            const text = event.results[event.results.length - 1].transcript.toLowerCase();
+            document.getElementById('out').innerText = "> ВХОД: " + text;
+            btnContainer.classList.remove('active');
+            sndClose.play();
+
+            let reply = "ПОНЯЛ ТЕБЯ!";
+            let pitch = 1.1;
+
+            if (text.includes("королёр")) {
+                reply = "ПРИВЕТСТВУЮ ТЕБЯ, МОЙ КОРОЛЁР! ТВОЯ ВЛАСТЬ БЕЗГРАНИЧНА!";
+                document.getElementById('main-svg').classList.add('gold-glow');
+                document.getElementById('s1').style.stopColor = "#ffd700";
+                document.getElementById('s2').style.stopColor = "#b8860b";
+                setTimeout(() => {
+                    document.getElementById('main-svg').classList.remove('gold-glow');
+                    document.getElementById('s1').style.stopColor = "#00d2ff";
+                    document.getElementById('s2').style.stopColor = "#3a7bd5";
+                }, 5000);
+            }
+            else if (text.includes("кейн") || text.includes("цирковой цирк")) {
+                reply = "А-ХА-ХА-ХА! ВЫХОДА НЕТ! ДОБРО ПОЖАЛОВАТЬ В ЦИФРОВОЙ ЦИРК!";
+                pitch = 1.8;
+                document.body.classList.add('glitch');
+                setTimeout(() => document.body.classList.remove('glitch'), 2000);
+            }
+            else if (text.includes("сделай бочку")) {
+                reply = "ВЫПОЛНЯЮ КУВЫРОК!";
+                document.body.classList.add('barrel-roll');
+                setTimeout(() => document.body.classList.remove('barrel-roll'), 1000);
+            }
+            else if (text.includes("найди")) {
+                let q = text.replace("найди", "").trim();
+                reply = "ИЩУ ИНФОРМАЦИЮ: " + q;
+                setTimeout(() => window.open(`https://yandex.ru{encodeURIComponent(q)}`, '_blank'), 1500);
+            }
+            else if (text.includes("ютуб") || text.includes("видео")) {
+                let q = text.replace("найди", "").replace("ютуб", "").replace("видео", "").trim();
+                reply = "ОТКРЫВАЮ ВИДЕО: " + q;
+                setTimeout(() => window.open(`https://www.youtube.com{encodeURIComponent(q)}`, '_blank'), 1500);
+            }
+
+            speak(reply, pitch);
         };
-        function js_speak(text) {
+
+        function speak(text, p) {
+            const synth = window.speechSynthesis;
             const utter = new SpeechSynthesisUtterance(text);
             utter.lang = 'ru-RU';
-            window.speechSynthesis.speak(utter);
+            utter.pitch = p;
+            statusTxt.innerText = "ОТВЕЧАЮ...";
+            synth.speak(utter);
+            utter.onend = () => { statusTxt.innerText = "ГОТОВ"; };
         }
     </script>
-
-    <!-- Python-логика -->
-    <py-script>
-from js import window, document, CustomEvent
-from pyodide import create_proxy
-
-status = document.getElementById("status")
-btn = document.getElementById("start-btn")
-
-status.innerText = "Алмазик готов!"
-btn.disabled = False
-
-def handle_speech(event):
-    text = event.detail.lower()
-    document.getElementById("user-text").innerText = "Вы: " + text
-    
-    if "привет" in text:
-        reply = "Привет! Я Алмазик, твой кристальный друг."
-    elif "как дела" in text:
-        reply = "Всё блестяще! У тебя как?"
-    else:
-        reply = "Я тебя услышал, но пока не знаю, что ответить."
-    
-    window.js_speak(reply)
-
-# Подписываемся на событие из JS
-on_speech = create_proxy(handle_speech)
-window.addEventListener("processSpeech", on_speech)
-
-def on_click(event):
-    status.innerText = "Слушаю..."
-    window.js_listen()
-
-btn.addEventListener("click", create_proxy(on_click))
-    </py-script>
-
 </body>
 </html>
