@@ -3,41 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Алмазик AI — Голосовой помощник</title>
+    <title>Алмазик AI</title>
     
-    <!-- Подключаем стили -->
-    <link rel="stylesheet" href="style.css">
-    
-    <!-- Стабильная версия PyScript (Next) -->
-    <link rel="stylesheet" href="https://pyscript.net">
-    <script type="module" src="https://pyscript.net"></script>
+    <!-- Стили встроенные, чтобы не зависеть от style.css -->
+    <style>
+        body { background: #0f172a; color: white; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }
+        .diamond { width: 120px; height: 120px; background: #00f2ff; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); margin: 0 auto 20px; font-size: 50px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px #00f2ff; }
+        button { padding: 10px 25px; border: 2px solid #00f2ff; background: none; color: #00f2ff; border-radius: 20px; cursor: pointer; font-weight: bold; }
+        button:disabled { border-color: #444; color: #444; cursor: wait; }
+    </style>
+
+    <!-- Используем альтернативный источник для PyScript -->
+    <link rel="stylesheet" href="https://pyscript.net" />
+    <script defer src="https://pyscript.net"></script>
 </head>
 <body>
 
     <div class="container">
-        <!-- Кристалл-алмаз -->
-        <div id="diamond-box" class="diamond">💎</div>
-        
-        <h1 id="status">Загрузка Алмазика...</h1>
-        <p id="user-text">Подождите, я настраиваю свои грани</p>
-        
+        <div class="diamond">💎</div>
+        <h1 id="status">Алмазик загружается...</h1>
+        <p id="user-text">Подождите немного</p>
         <button id="start-btn" disabled>ГОВОРИТЬ</button>
     </div>
 
-    <!-- JavaScript для работы с аудио-железом браузера -->
-    <script src="voice.js"></script>
-
-    <!-- Подключаем Python-скрипт с конфигурацией -->
-    <script type="py" src="script.py" config='{"packages": ["datetime"]}'></script>
-
+    <!-- Тот самый voice.js (можно оставить файлом или встроить) -->
     <script>
-        // Небольшой фикс для кнопки: разблокируем её, когда PyScript готов
-        window.addEventListener('py:ready', () => {
-            document.getElementById('status').innerText = "Алмазик готов!";
-            document.getElementById('start-btn').disabled = false;
-            document.getElementById('user-text').innerText = "Нажми на меня или кнопку";
-        });
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'ru-RU';
+        function js_listen() { recognition.start(); }
+        recognition.onresult = (e) => {
+            const text = e.results[0][0].transcript;
+            window.dispatchEvent(new CustomEvent("processSpeech", { detail: text }));
+        };
+        function js_speak(text) {
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.lang = 'ru-RU';
+            window.speechSynthesis.speak(utter);
+        }
     </script>
+
+    <!-- Python-логика -->
+    <py-script>
+from js import window, document, CustomEvent
+from pyodide import create_proxy
+
+status = document.getElementById("status")
+btn = document.getElementById("start-btn")
+
+status.innerText = "Алмазик готов!"
+btn.disabled = False
+
+def handle_speech(event):
+    text = event.detail.lower()
+    document.getElementById("user-text").innerText = "Вы: " + text
+    
+    if "привет" in text:
+        reply = "Привет! Я Алмазик, твой кристальный друг."
+    elif "как дела" in text:
+        reply = "Всё блестяще! У тебя как?"
+    else:
+        reply = "Я тебя услышал, но пока не знаю, что ответить."
+    
+    window.js_speak(reply)
+
+# Подписываемся на событие из JS
+on_speech = create_proxy(handle_speech)
+window.addEventListener("processSpeech", on_speech)
+
+def on_click(event):
+    status.innerText = "Слушаю..."
+    window.js_listen()
+
+btn.addEventListener("click", create_proxy(on_click))
+    </py-script>
 
 </body>
 </html>
