@@ -1,0 +1,60 @@
+body {
+    background: radial-gradient(circle, #1e293b 0%, #0f172a 100%);
+    color: white;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+}
+
+.container {
+    text-align: center;
+}
+
+.diamond {
+    width: 120px;
+    height: 120px;
+    background: #00f2ff;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    margin: 0 auto 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 50px;
+    box-shadow: 0 0 30px rgba(0, 242, 255, 0.5);
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.diamond:hover {
+    transform: scale(1.1);
+}
+
+.active {
+    animation: glow 1.5s infinite;
+}
+
+@keyframes glow {
+    0% { box-shadow: 0 0 20px #00f2ff; transform: scale(1); }
+    50% { box-shadow: 0 0 60px #00f2ff; transform: scale(1.05); }
+    100% { box-shadow: 0 0 20px #00f2ff; transform: scale(1); }
+}
+
+button {
+    background: transparent;
+    border: 2px solid #00f2ff;
+    color: #00f2ff;
+    padding: 10px 25px;
+    border-radius: 30px;
+    cursor: pointer;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+button:hover {
+    background: #00f2ff;
+    color: #0f172a;
+}
