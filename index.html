@@ -2,27 +2,42 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Алмазик AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Алмазик AI — Голосовой помощник</title>
+    
+    <!-- Подключаем стили -->
     <link rel="stylesheet" href="style.css">
     
-    <!-- PyScript -->
+    <!-- Стабильная версия PyScript (Next) -->
     <link rel="stylesheet" href="https://pyscript.net">
     <script type="module" src="https://pyscript.net"></script>
 </head>
 <body>
 
     <div class="container">
+        <!-- Кристалл-алмаз -->
         <div id="diamond-box" class="diamond">💎</div>
-        <h1 id="status">Алмазик готов</h1>
-        <p id="user-text">Нажми на кристалл</p>
-        <button id="start-btn">ГОВОРИТЬ</button>
+        
+        <h1 id="status">Загрузка Алмазика...</h1>
+        <p id="user-text">Подождите, я настраиваю свои грани</p>
+        
+        <button id="start-btn" disabled>ГОВОРИТЬ</button>
     </div>
 
-    <!-- Подключаем JavaScript -->
+    <!-- JavaScript для работы с аудио-железом браузера -->
     <script src="voice.js"></script>
 
-    <!-- Подключаем Python -->
-    <script type="py" src="script.py" config='{"packages":["datetime"]}'></script>
+    <!-- Подключаем Python-скрипт с конфигурацией -->
+    <script type="py" src="script.py" config='{"packages": ["datetime"]}'></script>
+
+    <script>
+        // Небольшой фикс для кнопки: разблокируем её, когда PyScript готов
+        window.addEventListener('py:ready', () => {
+            document.getElementById('status').innerText = "Алмазик готов!";
+            document.getElementById('start-btn').disabled = false;
+            document.getElementById('user-text').innerText = "Нажми на меня или кнопку";
+        });
+    </script>
 
 </body>
 </html>
